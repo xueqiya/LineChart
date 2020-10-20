@@ -12,12 +12,11 @@
         android:id="@+id/chartview"
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:layout_centerInParent="true"
-        app:bgcolor="#ffffff"
-        app:linecolor="#02bbb7"
-        app:xylinecolor="#e2e2e2"
-        app:xylinewidth="1dp"
-        app:xytextcolor="#7e7e7e"
+        app:bgcolor="@android:color/white"
+        app:linecolor="@android:color/holo_blue_light"
+        app:xylinecolor="@android:color/black"
+        app:xylinewidth="2dp"
+        app:xytextcolor="@android:color/black"
         app:xytextsize="12sp" />
 
     <androidx.appcompat.widget.AppCompatButton

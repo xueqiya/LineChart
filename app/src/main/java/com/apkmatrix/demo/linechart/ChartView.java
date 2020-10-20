@@ -142,18 +142,18 @@ public class ChartView extends View {
                 if (temp > textYWdith)
                     textYWdith = temp;
             }
-//          //X轴文本最大高度
+            //X轴文本最大高度
             float textXHeight = getTextBounds("000", xyTextPaint).height();
             for (int i = 0; i < xValue.size(); i++) {//求取x轴文本最大的高度
                 float temp = getTextBounds(xValue.get(i) + "", xyTextPaint).height();
                 if (temp > textXHeight)
                     textXHeight = temp;
             }
-            interval = (width - xOri) / 8;
             int dp2 = dpToPx(2);
             int dp3 = dpToPx(3);
             xOri = (int) (dp2 + textYWdith + dp2 + xylinewidth);//dp2是y轴文本距离左边，以及距离y轴的距离
             yOri = (int) (height - dp2 - textXHeight - dp3 - xylinewidth);//dp3是x轴文本距离底边，dp2是x轴文本距离x轴的距离
+            interval = (width - xOri) / 8;
             xInit = interval + xOri;
         }
         super.onLayout(changed, left, top, right, bottom);
@@ -250,7 +250,7 @@ public class ChartView extends View {
             canvas.drawText(text, 0, text.length(), xOri - xylinewidth - dpToPx(2) - rect.width(), yOri - yLength * i + rect.height() / 2, xyTextPaint);
         }
         //绘制X轴坐标(空出xInit)
-        canvas.drawLine(xOri, yOri + xylinewidth / 2, xInit * 2 + interval * (xValue.size() - 1), yOri + xylinewidth / 2, xyPaint);
+        canvas.drawLine(xOri, yOri + xylinewidth / 2, xInit + interval * xValue.size(), yOri + xylinewidth / 2, xyPaint);
         //绘制x轴箭头
         xyPaint.setStyle(Paint.Style.STROKE);
         path = new Path();
