@@ -1,23 +1,15 @@
 package com.apkmatrix.demo.linechart;
 
-import android.animation.Animator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.TypedValue;
-import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
-import android.view.animation.DecelerateInterpolator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,19 +22,19 @@ import java.util.Map;
  */
 public class ChartView extends View {
     //xy坐标轴颜色
-    private int xylinecolor = 0xffe2e2e2;
+    private int xylinecolor = Color.BLACK;
     //xy坐标轴宽度
     private int xylinewidth = dpToPx(1);
     //xy坐标轴文字颜色
-    private int xytextcolor = 0xff7e7e7e;
+    private int xytextcolor = Color.BLACK;
     //xy坐标轴文字大小
     private int xytextsize = spToPx(12);
     //折线图中折线的颜色
-    private int linecolor = 0xff02bbb7;
+    private int linecolor = Color.BLACK;
     //x轴各个坐标点水平间距
     private int interval = dpToPx(50);
     //背景颜色
-    private int bgcolor = 0xffffffff;
+    private int bgcolor = Color.BLACK;
     //绘制XY轴坐标对应的画笔
     private Paint xyPaint;
     //绘制XY轴的文本对应的画笔
@@ -57,20 +49,12 @@ public class ChartView extends View {
     private int yOri;
     //第一个点X的坐标
     private float xInit;
-    //第一个点对应的最大Y坐标
-    private float maxXInit;
-    //第一个点对应的最小X坐标
-    private float minXInit;
     //x轴坐标对应的数据
     private List<String> xValue = new ArrayList<>();
     //y轴坐标对应的数据
     private List<Integer> yValue = new ArrayList<>();
     //折线对应的数据
     private Map<String, Integer> value = new HashMap<>();
-    //点击的点对应的X轴的第几个点，默认1
-    private int selectIndex = 1;
-    //X轴刻度文本对应的最大矩形，为了选中时，在x轴文本画的框框大小一致
-    private Rect xValueRect;
 
     public ChartView(Context context) {
         this(context, null);
@@ -158,20 +142,17 @@ public class ChartView extends View {
                 if (temp > textYWdith)
                     textYWdith = temp;
             }
+//          //X轴文本最大高度
+            float textXHeight = getTextBounds("000", xyTextPaint).height();
+            for (int i = 0; i < xValue.size(); i++) {//求取x轴文本最大的高度
+                float temp = getTextBounds(xValue.get(i) + "", xyTextPaint).height();
+                if (temp > textXHeight)
+                    textXHeight = temp;
+            }
+            interval = (width - xOri) / 8;
             int dp2 = dpToPx(2);
             int dp3 = dpToPx(3);
             xOri = (int) (dp2 + textYWdith + dp2 + xylinewidth);//dp2是y轴文本距离左边，以及距离y轴的距离
-//            //X轴文本最大高度
-            xValueRect = getTextBounds("000", xyTextPaint);
-            float textXHeight = xValueRect.height();
-            for (int i = 0; i < xValue.size(); i++) {//求取x轴文本最大的高度
-                Rect rect = getTextBounds(xValue.get(i) + "", xyTextPaint);
-                if (rect.height() > textXHeight)
-                    textXHeight = rect.height();
-                if (rect.width() > xValueRect.width())
-                    xValueRect = rect;
-            }
-            interval = (width - xOri) / 8;
             yOri = (int) (height - dp2 - textXHeight - dp3 - xylinewidth);//dp3是x轴文本距离底边，dp2是x轴文本距离x轴的距离
             xInit = interval + xOri;
         }
@@ -245,14 +226,17 @@ public class ChartView extends View {
      */
     private void drawXY(Canvas canvas) {
         int length = dpToPx(4);//刻度的长度
+        int dp5 = dpToPx(5);
+        float jbHeight = getTextBounds("加班时间", xyTextPaint).height();
+        canvas.drawText("加班时间", 0, jbHeight, xyTextPaint);
         //绘制Y坐标
-        canvas.drawLine(xOri - xylinewidth / 2, 0, xOri - xylinewidth / 2, yOri, xyPaint);
+        canvas.drawLine(xOri - xylinewidth / 2, jbHeight + dp5, xOri - xylinewidth / 2, yOri, xyPaint);
         //绘制y轴箭头
         xyPaint.setStyle(Paint.Style.STROKE);
         Path path = new Path();
-        path.moveTo(xOri - xylinewidth / 2 - dpToPx(5), dpToPx(12));
-        path.lineTo(xOri - xylinewidth / 2, xylinewidth / 2);
-        path.lineTo(xOri - xylinewidth / 2 + dpToPx(5), dpToPx(12));
+        path.moveTo(xOri - xylinewidth / 2 - dpToPx(5), dpToPx(12) + jbHeight + dp5);
+        path.lineTo(xOri - xylinewidth / 2, xylinewidth / 2 + jbHeight + dp5);
+        path.lineTo(xOri - xylinewidth / 2 + dpToPx(5), dpToPx(12) + jbHeight + dp5);
         canvas.drawPath(path, xyPaint);
         //绘制y轴刻度
         int yLength = (int) (yOri * (1 - 0.2f) / (yValue.size() - 1));//y轴上面空出20%,计算出y轴刻度间距
@@ -265,13 +249,13 @@ public class ChartView extends View {
             Rect rect = getTextBounds(text, xyTextPaint);
             canvas.drawText(text, 0, text.length(), xOri - xylinewidth - dpToPx(2) - rect.width(), yOri - yLength * i + rect.height() / 2, xyTextPaint);
         }
-        //绘制X轴坐标
-        canvas.drawLine(xOri, yOri + xylinewidth / 2, width, yOri + xylinewidth / 2, xyPaint);
+        //绘制X轴坐标(空出xInit)
+        canvas.drawLine(xOri, yOri + xylinewidth / 2, xInit * 2 + interval * (xValue.size() - 1), yOri + xylinewidth / 2, xyPaint);
         //绘制x轴箭头
         xyPaint.setStyle(Paint.Style.STROKE);
         path = new Path();
         //整个X轴的长度
-        float xLength = xInit + interval * (xValue.size() - 1) + (width - xOri) * 0.2f;
+        float xLength = xInit * 2 + interval * (xValue.size() - 1) - xOri;
         path.moveTo(xLength - dpToPx(12), yOri + xylinewidth / 2 - dpToPx(5));
         path.lineTo(xLength - xylinewidth / 2, yOri + xylinewidth / 2);
         path.lineTo(xLength - dpToPx(12), yOri + xylinewidth / 2 + dpToPx(5));
@@ -286,11 +270,6 @@ public class ChartView extends View {
             Rect rect = getTextBounds(text, xyTextPaint);
             canvas.drawText(text, 0, text.length(), x - rect.width() / 2, yOri + xylinewidth + dpToPx(2) + rect.height(), xyTextPaint);
         }
-    }
-
-    public void setValue(Map<String, Integer> value) {
-        this.value = value;
-        invalidate();
     }
 
     public void setValue(Map<String, Integer> value, List<String> xValue, List<Integer> yValue) {
