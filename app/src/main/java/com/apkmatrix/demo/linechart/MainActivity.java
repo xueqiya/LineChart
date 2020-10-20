@@ -30,10 +30,15 @@ public class MainActivity extends AppCompatActivity {
     private Map<String, Float> getData() {
         Map<String, Float> map = new LinkedHashMap<>();
         String[] dates = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
-        for (int i = 0; i < 7; i++) {
-            final double d = Math.random();
-            final float num = (int) (d * 50);
-            map.put(dates[i], num);
+        int size = dates.length;
+        for (int i = 0; i < size; i++) {
+            if (i != size - 1) {
+                final double d = Math.random();
+                final float num = (int) (d * 100);
+                map.put(dates[i], num);
+            } else {
+                map.put(dates[i], 0f);
+            }
         }
         return map;
     }

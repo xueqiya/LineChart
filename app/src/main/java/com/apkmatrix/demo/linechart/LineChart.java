@@ -5,13 +5,18 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
+import java.util.Arrays;
 import java.util.Map;
 
 public class LineChart extends View {
-//    y轴数据
-    private final String[] ysplit = {"10", "20", "30", "40", "50"};
+    private String TAG = "LineChart_LOG";
+    //    y轴数据
+    private float[] ySplit = new float[5];
     private Paint XPaint;
     private Paint YPaint;
     private Paint pointPaint;
@@ -21,6 +26,7 @@ public class LineChart extends View {
     private final int textSize = 10;
     private boolean start = false;
     private Map<String, Float> mapx;
+    private double maxValue;
 
     public LineChart(Context context) {
         super(context);
@@ -48,7 +54,7 @@ public class LineChart extends View {
         pointPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         pointPaint.setAntiAlias(true);
         pointPaint.setColor(Color.BLACK);
-        pointPaint.setStyle(Paint.Style.STROKE);
+        pointPaint.setStyle(Paint.Style.FILL);
         pointPaint.setStrokeWidth(dp2px(1));
 
 //        xy轴
@@ -91,16 +97,17 @@ public class LineChart extends View {
             canvas.drawLine(yandianx + wigth, yuandiany, yandianx + wigth - dp2px(textSize / 2), yuandiany + dp2px(3), YPaint);
 //            绘制原点坐标数字0
             canvas.drawText("0", yandianx - sp2px(textSize) - dp2px(2), yuandiany + sp2px(textSize) + dp2px(2), effectPaint);
+            canvas.drawText("加班时间", yandianx - sp2px(textSize) * 2, yuandiany - height - dp2px(8), effectPaint);
 
-//            绘制y轴短横线和数字
-            float gao = height / (ysplit.length + 1);
-            for (int i = 0; i < ysplit.length; i++) {
-                float a = Float.parseFloat(ysplit[i]);
+//            绘制y轴短横线
+            float gao = height / (ySplit.length + 1);
+            for (int i = 0; i < ySplit.length; i++) {
+                float a = ySplit[i];
                 if (max < a) {
                     max = a;
                 }
                 canvas.drawLine(yandianx, yuandiany - (i + 1) * gao, yandianx + dp2px(3), yuandiany - (i + 1) * gao, YPaint);
-                canvas.drawText(ysplit[i], yandianx - (sp2px(textSize) * (ysplit[i].length())), yuandiany - (i + 1) * gao + sp2px(textSize / 2), effectPaint);
+                canvas.drawText(ySplit[i] + "", yandianx - (sp2px(textSize) * (2)), yuandiany - (i + 1) * gao + sp2px(textSize / 2), effectPaint);
             }
 
             float kuan = wigth / (mapx.size() + 1);
@@ -117,6 +124,11 @@ public class LineChart extends View {
 //                    绘制折线
                     canvas.drawLine(yandianx + i * kuan, yuandiany - (height - gao) / max * mapx.get(o[i - 1]), x, y, XPaint);
                 }
+
+                String xText = o[i].toString();
+                String yText = mapx.get(o[i]).toString();
+                String text = "(" + xText + "," + yText + ")";
+                canvas.drawText(text, x - text.length() * sp2px(textSize / 4), y - dp2px(3), effectPaint);
             }
 //            绘制折线连接处
             for (int i = 0; i < o.length; i++) {
@@ -131,6 +143,20 @@ public class LineChart extends View {
     public void startDraw(Map<String, Float> mapx) {
         start = true;
         this.mapx = mapx;
+        maxValue = 0;
+//        计算最大值
+        for (Map.Entry<String, Float> entry : mapx.entrySet()) {
+            float value = entry.getValue();
+            if (value > maxValue) {
+                maxValue = value;
+            }
+        }
+        Log.d(TAG, "maxValue:" + maxValue);
+//        计算y轴刻度
+        for (int i = 0; i < ySplit.length; i++) {
+            ySplit[i] = (float) (maxValue / 5 * (i + 1));
+        }
+        Log.d(TAG, "ysplit:" + Arrays.toString(ySplit));
         initView();
         invalidate();
     }
