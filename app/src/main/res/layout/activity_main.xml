@@ -14,8 +14,6 @@
         android:layout_height="400dp"
         android:layout_centerInParent="true"
         app:bgcolor="#ffffff"
-        app:interval="50dp"
-        app:isScroll="false"
         app:linecolor="#02bbb7"
         app:xylinecolor="#e2e2e2"
         app:xylinewidth="1dp"

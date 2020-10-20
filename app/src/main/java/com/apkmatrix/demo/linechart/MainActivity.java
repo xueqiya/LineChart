@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
     private final List<Integer> yValue = new ArrayList<>();
     //折线对应的数据
     private final Map<String, Integer> value = new HashMap<>();
-    private ChartView chartview;
+    private ChartView chartView;
     private Button refresh;
 
     @Override
@@ -30,43 +30,48 @@ public class MainActivity extends AppCompatActivity {
 
         initView();
 
-        for (int i = 0; i < 12; i++) {
-            xValue.add((i + 1) + "月");
-            value.put((i + 1) + "月", (int) (Math.random() * 181 + 60));//60--240
+        for (int i = 0; i < 7; i++) {
+            String x = "周" + (i + 1);
+            xValue.add(x);
+            value.put(x, (int) (Math.random() * 100));
         }
-
         for (int i = 0; i < 6; i++) {
-            yValue.add(i * 60);
+            yValue.add(i * 20);
         }
 
-        ChartView chartView = (ChartView) findViewById(R.id.chartview);
-        chartView.setValue(value, xValue, yValue);
 
         refresh.setOnClickListener(view -> {
-            Map<String, Double> map = getData();
-//            chartview.startDraw(map);
+            setData();
         });
     }
 
-
-    private Map<String, Double> getData() {
-        Map<String, Double> map = new LinkedHashMap<>();
-        String[] dates = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
-        int size = dates.length;
-        for (int i = 0; i < size; i++) {
-            if (i != size - 1) {
-                final double d = Math.random();
-                final double num = (d * 100);
-                map.put(dates[i], num);
+    private void setData() {
+        xValue.clear();
+        yValue.clear();
+        value.clear();
+        for (int i = 0; i < 7; i++) {
+            String x = "周" + (i + 1);
+            xValue.add(x);
+            if (i == 6) {
+                value.put(x, 0);
             } else {
-                map.put(dates[i], 0.0);
+                value.put(x, (int) (Math.random() * 100));
             }
         }
-        return map;
+        int maxValue = 0;
+        for (Map.Entry<String, Integer> entry : value.entrySet()) {
+            if (entry.getValue() > maxValue) {
+                maxValue = entry.getValue();
+            }
+        }
+        for (int i = 0; i < 5; i++) {
+            yValue.add((maxValue + 20) / 5 * i);
+        }
+        chartView.setValue(value, xValue, yValue);
     }
 
     private void initView() {
-        chartview = findViewById(R.id.chartview);
+        chartView = findViewById(R.id.chartview);
         refresh = findViewById(R.id.refresh);
     }
 }

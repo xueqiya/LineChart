@@ -10,20 +10,14 @@
     <attr name="xytextsize" format="dimension" />
     <!-- 折线图中折线的颜色 -->
     <attr name="linecolor" format="color" />
-    <!-- x轴各个坐标点水平间距 -->
-    <attr name="interval" format="dimension" />
     <!-- 背景颜色 -->
     <attr name="bgcolor" format="color" />
-    <!--是否在ACTION_UP时，根据速度进行自滑动，建议关闭，过于占用GPU-->
-    <attr name="isScroll" format="boolean" />
     <declare-styleable name="chartView">
         <attr name="xylinecolor" />
         <attr name="xylinewidth" />
         <attr name="xytextcolor" />
         <attr name="xytextsize" />
         <attr name="linecolor" />
-        <attr name="interval" />
         <attr name="bgcolor" />
-        <attr name="isScroll" />
     </declare-styleable>
 </resources>

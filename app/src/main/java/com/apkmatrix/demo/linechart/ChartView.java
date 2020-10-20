@@ -43,8 +43,6 @@ public class ChartView extends View {
     private int interval = dpToPx(50);
     //背景颜色
     private int bgcolor = 0xffffffff;
-    //是否在ACTION_UP时，根据速度进行自滑动，没有要求，建议关闭，过于占用GPU
-    private boolean isScroll = false;
     //绘制XY轴坐标对应的画笔
     private Paint xyPaint;
     //绘制XY轴的文本对应的画笔
@@ -73,8 +71,6 @@ public class ChartView extends View {
     private int selectIndex = 1;
     //X轴刻度文本对应的最大矩形，为了选中时，在x轴文本画的框框大小一致
     private Rect xValueRect;
-    //速度检测器
-    private VelocityTracker velocityTracker;
 
     public ChartView(Context context) {
         this(context, null);
@@ -103,9 +99,7 @@ public class ChartView extends View {
         xyTextPaint = new Paint();
         xyTextPaint.setAntiAlias(true);
         xyTextPaint.setTextSize(xytextsize);
-        xyTextPaint.setStrokeCap(Paint.Cap.ROUND);
         xyTextPaint.setColor(xytextcolor);
-        xyTextPaint.setStyle(Paint.Style.STROKE);
 
         linePaint = new Paint();
         linePaint.setAntiAlias(true);
@@ -143,19 +137,12 @@ public class ChartView extends View {
                 case R.styleable.chartView_linecolor://折线图中折线的颜色
                     linecolor = array.getColor(attr, linecolor);
                     break;
-                case R.styleable.chartView_interval://x轴各个坐标点水平间距
-                    interval = (int) array.getDimension(attr, TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, interval, getResources().getDisplayMetrics()));
-                    break;
                 case R.styleable.chartView_bgcolor: //背景颜色
                     bgcolor = array.getColor(attr, bgcolor);
-                    break;
-                case R.styleable.chartView_isScroll://是否在ACTION_UP时，根据速度进行自滑动
-                    isScroll = array.getBoolean(attr, isScroll);
                     break;
             }
         }
         array.recycle();
-
     }
 
     @Override
@@ -164,6 +151,7 @@ public class ChartView extends View {
             //这里需要确定几个基本点，只有确定了xy轴原点坐标，第一个点的X坐标值及其最大最小值
             width = getWidth();
             height = getHeight();
+            interval = width / 9;
             //Y轴文本最大宽度
             float textYWdith = getTextBounds("000", xyTextPaint).width();
             for (int i = 0; i < yValue.size(); i++) {//求取y轴文本最大的宽度
@@ -186,16 +174,14 @@ public class ChartView extends View {
             }
             yOri = (int) (height - dp2 - textXHeight - dp3 - xylinewidth);//dp3是x轴文本距离底边，dp2是x轴文本距离x轴的距离
             xInit = interval + xOri;
-            minXInit = width - (width - xOri) * 0.1f - interval * (xValue.size() - 1);//减去0.1f是因为最后一个X周刻度距离右边的长度为X轴可见长度的10%
-            maxXInit = xInit;
         }
         super.onLayout(changed, left, top, right, bottom);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-//        super.onDraw(canvas);
         canvas.drawColor(bgcolor);
+        if (xValue.size() <= 0) return;
         drawXY(canvas);
         drawBrokenLineAndPoint(canvas);
     }
@@ -206,22 +192,9 @@ public class ChartView extends View {
      * @param canvas
      */
     private void drawBrokenLineAndPoint(Canvas canvas) {
-        if (xValue.size() <= 0)
-            return;
-        //重新开一个图层
-        int layerId = canvas.saveLayer(0, 0, width, height, null, Canvas.ALL_SAVE_FLAG);
+        if (xValue.size() <= 0) return;
         drawBrokenLine(canvas);
         drawBrokenPoint(canvas);
-
-        // 将折线超出x轴坐标的部分截取掉
-        linePaint.setStyle(Paint.Style.FILL);
-        linePaint.setColor(bgcolor);
-        linePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-        RectF rectF = new RectF(0, 0, xOri, height);
-        canvas.drawRect(rectF, linePaint);
-        linePaint.setXfermode(null);
-        //保存图层
-        canvas.restoreToCount(layerId);
     }
 
     /**
@@ -365,124 +338,11 @@ public class ChartView extends View {
                 if (i == selectIndex - 1) {
                     xyTextPaint.setColor(linecolor);
                     canvas.drawText(text, 0, text.length(), x - rect.width() / 2, yOri + xylinewidth + dpToPx(2) + rect.height(), xyTextPaint);
-                    canvas.drawRoundRect(x - xValueRect.width() / 2 - dpToPx(3), yOri + xylinewidth + dpToPx(1), x + xValueRect.width() / 2 + dpToPx(3), yOri + xylinewidth + dpToPx(2) + xValueRect.height() + dpToPx(2), dpToPx(2), dpToPx(2), xyTextPaint);
                 } else {
                     canvas.drawText(text, 0, text.length(), x - rect.width() / 2, yOri + xylinewidth + dpToPx(2) + rect.height(), xyTextPaint);
                 }
             }
         }
-    }
-
-    private float startX;
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if (isScrolling)
-            return super.onTouchEvent(event);
-        this.getParent().requestDisallowInterceptTouchEvent(true);//当该view获得点击事件，就请求父控件不拦截事件
-        obtainVelocityTracker(event);
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                startX = event.getX();
-                break;
-            case MotionEvent.ACTION_MOVE:
-                if (interval * xValue.size() > width - xOri) {//当期的宽度不足以呈现全部数据
-                    float dis = event.getX() - startX;
-                    startX = event.getX();
-                    if (xInit + dis < minXInit) {
-                        xInit = minXInit;
-                    } else if (xInit + dis > maxXInit) {
-                        xInit = maxXInit;
-                    } else {
-                        xInit = xInit + dis;
-                    }
-                    invalidate();
-                }
-                break;
-            case MotionEvent.ACTION_UP:
-                clickAction(event);
-                scrollAfterActionUp();
-                this.getParent().requestDisallowInterceptTouchEvent(false);
-                recycleVelocityTracker();
-                break;
-            case MotionEvent.ACTION_CANCEL:
-                this.getParent().requestDisallowInterceptTouchEvent(false);
-                recycleVelocityTracker();
-                break;
-        }
-        return true;
-    }
-
-    //是否正在滑动
-    private boolean isScrolling = false;
-
-    /**
-     * 手指抬起后的滑动处理
-     */
-    private void scrollAfterActionUp() {
-        if (!isScroll)
-            return;
-        final float velocity = getVelocity();
-        float scrollLength = maxXInit - minXInit;
-        if (Math.abs(velocity) < 10000)//10000是一个速度临界值，如果速度达到10000，最大可以滑动(maxXInit - minXInit)
-            scrollLength = (maxXInit - minXInit) * Math.abs(velocity) / 10000;
-        ValueAnimator animator = ValueAnimator.ofFloat(0, scrollLength);
-        animator.setDuration((long) (scrollLength / (maxXInit - minXInit) * 1000));//时间最大为1000毫秒，此处使用比例进行换算
-        animator.setInterpolator(new DecelerateInterpolator());
-        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                float value = (float) valueAnimator.getAnimatedValue();
-                if (velocity < 0 && xInit > minXInit) {//向左滑动
-                    if (xInit - value <= minXInit)
-                        xInit = minXInit;
-                    else
-                        xInit = xInit - value;
-                } else if (velocity > 0 && xInit < maxXInit) {//向右滑动
-                    if (xInit + value >= maxXInit)
-                        xInit = maxXInit;
-                    else
-                        xInit = xInit + value;
-                }
-                invalidate();
-            }
-        });
-        animator.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animator) {
-                isScrolling = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animator) {
-                isScrolling = false;
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animator) {
-                isScrolling = false;
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animator) {
-
-            }
-        });
-        animator.start();
-
-    }
-
-    /**
-     * 获取速度
-     *
-     * @return
-     */
-    private float getVelocity() {
-        if (velocityTracker != null) {
-            velocityTracker.computeCurrentVelocity(1000);
-            return velocityTracker.getXVelocity();
-        }
-        return 0;
     }
 
     /**
@@ -518,49 +378,6 @@ public class ChartView extends View {
         }
     }
 
-
-    /**
-     * 获取速度跟踪器
-     *
-     * @param event
-     */
-    private void obtainVelocityTracker(MotionEvent event) {
-        if (!isScroll)
-            return;
-        if (velocityTracker == null) {
-            velocityTracker = VelocityTracker.obtain();
-        }
-        velocityTracker.addMovement(event);
-    }
-
-    /**
-     * 回收速度跟踪器
-     */
-    private void recycleVelocityTracker() {
-        if (velocityTracker != null) {
-            velocityTracker.recycle();
-            velocityTracker = null;
-        }
-    }
-
-    public int getSelectIndex() {
-        return selectIndex;
-    }
-
-    public void setSelectIndex(int selectIndex) {
-        this.selectIndex = selectIndex;
-        invalidate();
-    }
-
-    public void setxValue(List<String> xValue) {
-        this.xValue = xValue;
-    }
-
-    public void setyValue(List<Integer> yValue) {
-        this.yValue = yValue;
-        invalidate();
-    }
-
     public void setValue(Map<String, Integer> value) {
         this.value = value;
         invalidate();
@@ -571,18 +388,6 @@ public class ChartView extends View {
         this.xValue = xValue;
         this.yValue = yValue;
         invalidate();
-    }
-
-    public List<String> getxValue() {
-        return xValue;
-    }
-
-    public List<Integer> getyValue() {
-        return yValue;
-    }
-
-    public Map<String, Integer> getValue() {
-        return value;
     }
 
     /**
