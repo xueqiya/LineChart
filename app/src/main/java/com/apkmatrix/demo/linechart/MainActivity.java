@@ -30,16 +30,6 @@ public class MainActivity extends AppCompatActivity {
 
         initView();
 
-        for (int i = 0; i < 7; i++) {
-            String x = "周" + (i + 1);
-            xValue.add(x);
-            value.put(x, (int) (Math.random() * 100));
-        }
-        for (int i = 0; i < 6; i++) {
-            yValue.add(i * 20);
-        }
-
-
         refresh.setOnClickListener(view -> {
             setData();
         });
@@ -64,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
                 maxValue = entry.getValue();
             }
         }
-        for (int i = 0; i < 5; i++) {
-            yValue.add((maxValue + 20) / 5 * i);
+        for (int i = 0; i < 6; i++) {
+            yValue.add((maxValue) / 5 * i);
         }
         chartView.setValue(value, xValue, yValue);
     }
